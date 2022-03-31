@@ -1,0 +1,20 @@
+service: all-in-yearbook
+provider:
+  name: aws
+  runtime: nodejs14.x
+  region: us-east-1
+  lambdaHashingVersion: 20201221
+  environment:
+    APP_ID: ${ssm:ALL_IN_APP_ID}
+    PRIVATE_KEY: ${ssm:ALL_IN_PRIVATE_KEY}
+    WEBHOOK_SECRET: ${ssm:ALL_IN_WEBHOOK_SECRET}
+    NODE_ENV: production
+    LOG_LEVEL: debug
+
+functions:
+  webhooks:
+    handler: handler.webhooks
+    events:
+      - httpApi:
+          path: /api/github/webhooks
+          method: post

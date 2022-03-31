@@ -1,0 +1,350 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "The AWS CloudFormation template for this Serverless application",
+  "Resources": {
+    "ServerlessDeploymentBucket": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        }
+      }
+    },
+    "ServerlessDeploymentBucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "ServerlessDeploymentBucket"
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:*",
+              "Effect": "Deny",
+              "Principal": "*",
+              "Resource": [
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      },
+                      "/*"
+                    ]
+                  ]
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      "arn:",
+                      {
+                        "Ref": "AWS::Partition"
+                      },
+                      ":s3:::",
+                      {
+                        "Ref": "ServerlessDeploymentBucket"
+                      }
+                    ]
+                  ]
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": false
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "WebhooksLogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/all-in-yearbook-dev-webhooks"
+      }
+    },
+    "IamRoleLambdaExecution": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": [
+                  "lambda.amazonaws.com"
+                ]
+              },
+              "Action": [
+                "sts:AssumeRole"
+              ]
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": {
+              "Fn::Join": [
+                "-",
+                [
+                  "all-in-yearbook",
+                  "dev",
+                  "lambda"
+                ]
+              ]
+            },
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:CreateLogGroup"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/all-in-yearbook-dev*:*"
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/all-in-yearbook-dev*:*:*"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "Path": "/",
+        "RoleName": {
+          "Fn::Join": [
+            "-",
+            [
+              "all-in-yearbook",
+              "dev",
+              {
+                "Ref": "AWS::Region"
+              },
+              "lambdaRole"
+            ]
+          ]
+        }
+      }
+    },
+    "WebhooksLambdaFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Code": {
+          "S3Bucket": {
+            "Ref": "ServerlessDeploymentBucket"
+          },
+          "S3Key": "serverless/all-in-yearbook/dev/1648746680974-2022-03-31T17:11:20.974Z/all-in-yearbook.zip"
+        },
+        "Handler": "handler.webhooks",
+        "Runtime": "nodejs14.x",
+        "FunctionName": "all-in-yearbook-dev-webhooks",
+        "MemorySize": 1024,
+        "Timeout": 6,
+        "Environment": {
+          "Variables": {
+            "APP_ID": "185742",
+            "PRIVATE_KEY": "-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEAw6jqHeKMUYkPRv1uMug/W35i03NNeRQ7bI36N2sCY38m+G78\nJGjbB55zOhHliU94u+lHRGdIutwB6j0NDxaSjtV1MxWd6uXsO6tg3fFiJ51flzo4\nK3b+9d9ea1QoLK93T2Q/+w0SgSCb+SmDT2Eo3m5JjTKleMZ1oaj/IFnT23VVE3OX\ngseTMSG6BStm+h+FmAdzw8MOFBKtx6oMmnDOcZQncJsKwJ3K5GozROoN92Vqlu9Y\nvSB35dICdvW5KiI32MkfbLCaPKmlxoxwUbeFLjSkZHmGuYj/Ze1kgVC4+pamnBaA\n+GC45g5R25YbV+/QfXOj7Xgd4yhIujKQjEYl+QIDAQABAoIBAQCMMIIWiZU6cnbU\nyY7kwM1sk+DhWpMe9uUhAZVPkcezXI6ioHre55ZQHjK3X81UFfIOybV7iHlvEWX5\n3GZ38hduaflAcfOlM7qQglm0jFhkw/iS1W8bjXZe2v2+7xyd79cPtme1TId+p8u5\nugnQnW/395ORrMEtCR2NiBXMqzAF5Ad99d9UOiXfVS47wQtGXxstjL3MF7TloR2S\nsTTkh+vXoujLawMz0Tj9gHcx7vNL//ijDFFtAl2D2IoidhktCOX03uaVeYnCwoQG\n0plXQuG2CoFZW45g/16GcD/ebImO2V3Wl23TRjnXQmjE0+JHy0d7r1+AvP8fb7Qg\nzNnUFBiVAoGBAP6jAEayzjXJjpo18P6wxDO2eKeOmD5mjIdEFvpZF3i5Dvjdk22a\n+HS1RV68HGxVasrof9ST8cgiH8NgkyOya5MBCvzFzPDJL6rCHtFB8ge3d7XVGDFD\nNUAdXw/r6cOmo3ORv957iUd5VR7FRqI3KwSnJzHFavRl1GNseI7m8ZObAoGBAMS1\nFMTgCbV0NMtP/Lb1i08bpaqEOJJWfGxf1AmEePVsM6+mNzXJkXGwoegvmaRMhq1L\nXws2Avc8gJjXIdAjnnyvoncLLgzmsBMNa5ZAlIWvgD2HtGCFWSRB1zEmEZ8W3O+a\nFaAOypTnABr/9FtQWrrjPfFwXeSdWj51pQ6krpf7AoGAXMt0D0+b/Ff+gs5Di91J\nMvs9TvqVGrBuZ+D1arhK6HCwNxswXdIK1yU0KYjt5sDeESHXa9WaV++vmZi5Jlof\n/8tygJlozRrUJytk5addl1hR5M7KaTFv13ScrwWvA+DXUgd8X4yvg3+A+Jy11+m4\n4JI1o1qpVnVBiBYAfTtGMB8CgYEAtGKmiCA3ZwoIvAU+53zm4oWk92jHBBOBiFSc\nepnb3pv6DfKsIIwW754d63FzQMLYoiRDJWHDeHwoJYDrRhbT6N2ba/V5pmUKRH6D\nEcdpK+sT+9jtZbIDXAdw0mZptG1f7+1qNVw7FC993kSoDfDzMvzeugDkaZiOwEZc\nNcB5R28CgYBQRf750XOAHRLnkD3lyS3vSkIsEAgqBMamYpIJ4OKalPpgV5EAXdWG\npRMawcCi9FIsmeHHmvouMwVFnV97knGVnMWskSdzlQPCRcHsU8WkTEnXyBoeiCKy\ndCyNUE6N+g3HudhB5s7/W4inYHHH3aG7JfyXGLtRaHCzk3KyzhxVAw==\n-----END RSA PRIVATE KEY-----",
+            "WEBHOOK_SECRET": "development",
+            "NODE_ENV": "production",
+            "LOG_LEVEL": "debug"
+          }
+        },
+        "Role": {
+          "Fn::GetAtt": [
+            "IamRoleLambdaExecution",
+            "Arn"
+          ]
+        }
+      },
+      "DependsOn": [
+        "WebhooksLogGroup"
+      ]
+    },
+    "WebhooksLambdaVersionaoBeE5ZoePLCMX8H8a6PqHoS27WSULPQUrTbUTWW8Q": {
+      "Type": "AWS::Lambda::Version",
+      "DeletionPolicy": "Retain",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "WebhooksLambdaFunction"
+        },
+        "CodeSha256": "Hp7wC7mNT5oGWs/NbCY2FL3YJvy074enYVzKDbleCbE="
+      }
+    },
+    "HttpApi": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": "dev-all-in-yearbook",
+        "ProtocolType": "HTTP"
+      }
+    },
+    "HttpApiStage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "DetailedMetricsEnabled": false
+        }
+      }
+    },
+    "WebhooksLambdaPermissionHttpApi": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Fn::GetAtt": [
+            "WebhooksLambdaFunction",
+            "Arn"
+          ]
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Join": [
+            "",
+            [
+              "arn:",
+              {
+                "Ref": "AWS::Partition"
+              },
+              ":execute-api:",
+              {
+                "Ref": "AWS::Region"
+              },
+              ":",
+              {
+                "Ref": "AWS::AccountId"
+              },
+              ":",
+              {
+                "Ref": "HttpApi"
+              },
+              "/*"
+            ]
+          ]
+        }
+      }
+    },
+    "HttpApiIntegrationWebhooks": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "WebhooksLambdaFunction",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0",
+        "TimeoutInMillis": 6500
+      }
+    },
+    "HttpApiRoutePostApiGithubWebhooks": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "HttpApi"
+        },
+        "RouteKey": "POST /api/github/webhooks",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "HttpApiIntegrationWebhooks"
+              }
+            ]
+          ]
+        }
+      },
+      "DependsOn": "HttpApiIntegrationWebhooks"
+    }
+  },
+  "Outputs": {
+    "ServerlessDeploymentBucketName": {
+      "Value": {
+        "Ref": "ServerlessDeploymentBucket"
+      },
+      "Export": {
+        "Name": "sls-all-in-yearbook-dev-ServerlessDeploymentBucketName"
+      }
+    },
+    "WebhooksLambdaFunctionQualifiedArn": {
+      "Description": "Current Lambda function version",
+      "Value": {
+        "Ref": "WebhooksLambdaVersionaoBeE5ZoePLCMX8H8a6PqHoS27WSULPQUrTbUTWW8Q"
+      },
+      "Export": {
+        "Name": "sls-all-in-yearbook-dev-WebhooksLambdaFunctionQualifiedArn"
+      }
+    },
+    "HttpApiId": {
+      "Description": "Id of the HTTP API",
+      "Value": {
+        "Ref": "HttpApi"
+      },
+      "Export": {
+        "Name": "sls-all-in-yearbook-dev-HttpApiId"
+      }
+    },
+    "HttpApiUrl": {
+      "Description": "URL of the HTTP API",
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "https://",
+            {
+              "Ref": "HttpApi"
+            },
+            ".execute-api.",
+            {
+              "Ref": "AWS::Region"
+            },
+            ".",
+            {
+              "Ref": "AWS::URLSuffix"
+            }
+          ]
+        ]
+      },
+      "Export": {
+        "Name": "sls-all-in-yearbook-dev-HttpApiUrl"
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "name": "yearbook-quote-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "submit yearbook quotes",
+  "author": "GitHub <undefined>",
+  "license": "ISC",
+  "homepage": "https://github.com/codespace/yearbook-quote-app",
+  "keywords": [
+    "probot",
+    "github",
+    "probot-app"
+  ],
+  "scripts": {
+    "start": "probot run ./index.js",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@probot/adapter-aws-lambda-serverless": "^3.0.1",
+    "octokit": "^1.7.1",
+    "octokit-plugin-create-pull-request": "^3.11.0",
+    "probot": "^11.0.1",
+    "serverless": "^3.10.1"
+  },
+  "devDependencies": {
+    "jest": "^26.6.3",
+    "nock": "^13.0.5",
+    "smee-client": "^1.2.2"
+  },
+  "engines": {
+    "node": ">= 10.13.0"
+  },
+  "jest": {
+    "testEnvironment": "node"
+  }
+}
